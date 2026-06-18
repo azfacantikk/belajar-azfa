@@ -6,13 +6,15 @@ use CodeIgniter\Model;
 
 class TransactionModel extends Model
 {
-    protected $table            = 'transactions';
+    protected $table            = 'transaction';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = true;
     protected $protectFields    = true;
-    protected $allowedFields    = ['username', 'total_harga', 'alamat', 'ongkir', 'status'];
+    
+    // PENYEMPURNAAN: Menambahkan 'created_at' dan 'updated_at' agar sistem diizinkan mengisi waktu otomatis
+    protected $allowedFields    = ['username', 'total_harga', 'alamat', 'ongkir', 'status', 'created_at', 'updated_at'];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;

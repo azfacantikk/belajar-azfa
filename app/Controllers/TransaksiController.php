@@ -216,10 +216,28 @@ class TransaksiController extends BaseController
     if (!$db->transStatus()) {
         return redirect()->back()->with('error', 'Gagal membuat transaksi');
     }
+    
 
 		//hapus session keranjang belanja 
     $this->cart->destroy();
     return redirect()->to(base_url());
+}
+
+public function history()
+{
+    $username = session()->get('username'); 
+    $transactions = $this->transactionModel->where('username', $username)->findAll();
+    $transactionIds = array_column($transactions, 'id');
+
+    $products = $this->transactionDetailModel->getProductsByTransactionIds($transactionIds);
+
+    $data = [
+        'username'      => $username,
+        'transactions'  => $transactions,
+        'products'      => $products
+    ]; 
+
+    return view('v_history', $data);
 }
 
 }

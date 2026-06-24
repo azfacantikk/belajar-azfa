@@ -52,6 +52,9 @@ class TransaksiController extends BaseController
             return $this->unauthorized();
         }
 
+        // 1. Load Helper Diskon yang sudah dibuat pada Task 2
+        helper('Diskon');
+
         $start = $this->request->getGet('start');
         $end   = $this->request->getGet('end'); 
 
@@ -82,9 +85,23 @@ class TransaksiController extends BaseController
             $products = $this->transactionDetailModel->getProductsByTransactionIds($transactionIds);
         }
 
-        // Inject detail ke transaksi
+        // Inject detail dan kalkulasi diskon ke tiap baris transaksi jika field di DB masih kosong
         foreach ($transactions as $key => $trx) {
             $transactions[$key]['details'] = $products[$trx['id']] ?? [];
+            
+            // Mengamankan nilai diskon di level response API sesuai rule tiered discount
+            // Jika field diskon di database bernilai 0 atau belum terisi, auto-calculate dari nominal grand_total / total
+            if (!isset($trx['diskon']) || $trx['diskon'] == 0) {
+                $totalKotor = $trx['grand_total'] ?? 0; // Sesuaikan field total kotor belanja di barismu
+                $kalkulasi  = hitung_diskon($totalKotor);
+                $transactions[$key]['diskon'] = $kalkulasi['nominal'];
+                $transactions[$key]['diskon_persen'] = $kalkulasi['persen'] . '%';
+            } else {
+                // Jika sudah tersimpan di database, tinggal hitung persentase aslinya untuk view kuis
+                $totalKotor = $trx['grand_total'] + $trx['diskon'] - ($trx['ongkir'] ?? 0);
+                $kalkulasi  = hitung_diskon($totalKotor);
+                $transactions[$key]['diskon_persen'] = $kalkulasi['persen'] . '%';
+            }
         }
 
         // Pagination info

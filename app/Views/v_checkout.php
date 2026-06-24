@@ -89,6 +89,11 @@
                     <td>Subtotal</td>
                     <td><?= number_to_currency($total, 'IDR') ?></td>
                 </tr>
+                <tr id="row-diskon" class="text-danger" style="display: none; font-weight: bold;">
+                    <td colspan="2"></td>
+                    <td>Diskon (<span id="diskon-persen">0</span>%)</td>
+                    <td>-<span id="diskon-nominal">IDR 0,00</span></td>
+                </tr>
                 <tr>
                     <td colspan="2"></td>
                     <td>Total</td>
@@ -110,7 +115,30 @@ $(document).ready(function() {
     function hitungTotal() {
         let subtotalNum = parseInt(subtotal) || 0;
         let ongkirNum = parseInt(ongkir) || 0;
-        let total = subtotalNum + ongkirNum;
+        
+        // --- LOGIKA DISKON TIERED (Task 4) ---
+        let persenDiskon = 0;
+        if (subtotalNum >= 50000000) {
+            persenDiskon = 15;
+        } else if (subtotalNum >= 30000000) {
+            persenDiskon = 10;
+        } else if (subtotalNum >= 10000000) {
+            persenDiskon = 5;
+        }
+
+        let nominalDiskon = (persenDiskon / 100) * subtotalNum;
+        
+        // Tampilkan/Sembunyikan baris rincian diskon berdasarkan kriteria kuis
+        if (persenDiskon > 0) {
+            $("#diskon-persen").text(persenDiskon);
+            $("#diskon-nominal").text(`IDR ${nominalDiskon.toLocaleString('id-ID')},00`);
+            $("#row-diskon").show();
+        } else {
+            $("#row-diskon").hide();
+        }
+
+        // Rumus Grand Total: Subtotal - Diskon + Ongkir
+        let total = subtotalNum - nominalDiskon + ongkirNum;
 
         $("#ongkir").val(ongkirNum);
         $("#total").text(`IDR ${total.toLocaleString('id-ID')},00`);
@@ -156,7 +184,6 @@ $(document).ready(function() {
 
                     if (listLayanan && listLayanan.length > 0) {
                         $.each(listLayanan, function(index, item) {
-                            // Render teks panjang bawaan modul dosen ke dropdown
                             $("#layanan").append(
                                 `<option value="${item.cost}">
                                     ${item.name}

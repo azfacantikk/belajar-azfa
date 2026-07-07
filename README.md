@@ -1,7 +1,8 @@
-# UAS PWL: Checkout & Perhitungan Tambahan (Capstone Project)
+# Capstone Project: E-Commerce & Shipping System (CodeIgniter 4)
 
-Proyek ini adalah implementasi sistem checkout dengan perhitungan tambahan untuk **Ujian Akhir Semester (UAS) Genap 2025/2026** mata kuliah Pemrograman Web Lanjut (PWL).
+Proyek ini adalah aplikasi web E-Commerce lengkap yang dibangun menggunakan framework **CodeIgniter 4**, terintegrasi dengan **RajaOngkir API** untuk perhitungan ongkos kirim secara dinamis, sistem Keranjang Belanja, manajemen produk (CRUD), Autentikasi, RESTful API, dan perhitungan checkout tambahan untuk UAS.
 
+## 👤 Identitas Pengembang
 - **Nama**: Na'ilah Azfa Zarqarida
 - **NIM**: A11.2024.15549
 - **Kelompok**: A11.4408
@@ -9,76 +10,158 @@ Proyek ini adalah implementasi sistem checkout dengan perhitungan tambahan untuk
 
 ---
 
-## 🛠️ Fitur Perhitungan Tambahan
-Aplikasi menghitung dan menyimpan komponen keuangan transaksi berikut ke database secara otomatis:
-1. **Biaya Admin**:
-   - Total Belanja $\le$ Rp 20.000.000 $\rightarrow$ Tarif **0.5%**
-   - Total Belanja $>$ Rp 20.000.000 $\rightarrow$ Tarif **0.75%**
-2. **Kupon Diskon**:
-   - `HEMAT` $\rightarrow$ Potongan **15%**
-   - `SUPER` $\rightarrow$ Potongan **20%**
-   - Kode Lainnya / Invalid $\rightarrow$ Potongan **0%**
-3. **Cashback**:
-   - Total Belanja $>$ Rp 10.000.000 $\rightarrow$ Cashback **2%**
-   - Total Belanja $\le$ Rp 10.000.000 $\rightarrow$ Cashback **0%**
+## 🚀 Fitur Utama Aplikasi
+
+1. **Sistem Autentikasi (Auth Filter)**:
+   - Login & Logout dengan multi-user.
+   - Filter keamanan (`Filters/Auth.php`) untuk membatasi akses halaman checkout, keranjang, profile, dan manajemen produk hanya untuk user yang sudah login.
+   
+2. **Manajemen Produk (CRUD & PDF)**:
+   - Fitur Tambah, Edit, Hapus, dan Tampil produk untuk admin.
+   - Fitur ekspor/download daftar produk ke format PDF (`produk/download_pdf.php`).
+
+3. **Keranjang Belanja (Shopping Cart)**:
+   - Menambahkan produk ke keranjang belanja secara interaktif.
+   - Memperbarui jumlah (quantity) produk, menghapus item tertentu, atau mengosongkan keranjang sekaligus.
+
+4. **Integrasi RajaOngkir API**:
+   - Pencarian kota/kelurahan tujuan pengiriman secara dinamis menggunakan library **Select2** pada halaman checkout.
+   - Mengambil tarif ongkos kirim (ongkir) kurir JNE secara realtime menggunakan web service RajaOngkir (`Services/RajaOngkirService.php`).
+
+5. **Perhitungan Tambahan Checkout (Fitur UAS)**:
+   - **Biaya Admin**: Dihitung otomatis (0.5% jika total belanja $\le$ Rp 20jt, atau 0.75% jika total belanja $>$ Rp 20jt).
+   - **Kupon Promo**: Memotong harga belanja (Kupon `HEMAT` memotong 15%, kupon `SUPER` memotong 20%).
+   - **Cashback**: Memberikan cashback 2% ke pelanggan jika total belanja awal lebih dari Rp 10.000.000.
+   - Perhitungan berjalan secara dinamis menggunakan frontend JavaScript (jQuery) dan disimpan secara aman di database oleh Backend Controller.
+
+6. **Riwayat Transaksi (History)**:
+   - Menampilkan daftar transaksi masa lalu yang pernah dilakukan oleh user yang sedang login beserta status pembayarannya.
+
+7. **Web Service (RESTful API)**:
+   - Menyediakan endpoint API untuk data produk (`api/products`) dan data transaksi (`api/transactions`).
 
 ---
 
-## 📂 Struktur File Implementasi UAS
-Berikut adalah file utama yang dimodifikasi dan ditambahkan untuk mengimplementasikan fitur UAS:
+## 📂 Penjelasan Struktur Folder & File Utama
+
+Berikut adalah penjelasan fungsi folder dan berkas utama di dalam proyek ini:
 
 ```text
 belajar-azfa/
 ├── app/
+│   ├── Config/
+│   │   ├── Autoload.php             # Registrasi namespace, library, dan autoload helper
+│   │   ├── Database.php             # Konfigurasi koneksi database MySQL
+│   │   ├── Filters.php              # Mendaftarkan filter auth keamanan rute aplikasi
+│   │   └── Routes.php               # Konfigurasi pemetaan URL/rute ke Controller
+│   │
 │   ├── Controllers/
-│   │   └── TransaksiController.php  <-- Update buy() & checkout() logic
-│   ├── Helpers/
-│   │   └── TransaksiHelper.php      <-- Core logic hitung biaya admin, diskon, cashback
-│   ├── Models/
-│   │   └── TransactionModel.php     <-- Update $allowedFields untuk menyimpan data uas
+│   │   ├── AuthController.php       # Mengatur alur login admin & user serta logout
+│   │   ├── ProdukController.php     # Logika CRUD produk dan export PDF
+│   │   ├── TransaksiController.php  # Proses checkout, checkout logic, riwayat, & AJAX RajaOngkir
+│   │   ├── Keranjang.php            # Logika manipulasi item belanja (Cart library)
+│   │   └── Api/
+│   │       ├── ProdukController.php    # RESTful API Endpoint untuk data Produk
+│   │       └── TransaksiController.php # RESTful API Endpoint untuk data Transaksi
+│   │
 │   ├── Database/
-│   │   └── Migrations/
-│   │       └── 2026-07-03-063753_UpdateTransactionTableUas.php <-- Migration field baru
+│   │   ├── Migrations/              # File blueprint untuk membuat & mengubah tabel DB
+│   │   │   ├── ..._Product.php
+│   │   │   ├── ..._Transaction.php
+│   │   │   ├── ..._TransactionDetail.php
+│   │   │   ├── ..._User.php
+│   │   │   └── ..._UpdateTransactionTableUas.php # Migration field perhitungan tambahan
+│   │   └── Seeds/                   # Data awal (seeder) database untuk user & produk
+│   │       ├── ProductSeeder.php
+│   │       └── UserSeeder.php
+│   │
+│   ├── Filters/
+│   │   └── Auth.php                 # Middleware/Filter pengecekan session login user
+│   │
+│   ├── Helpers/
+│   │   ├── DiskonHelper.php         # Helper pembantu kalkulasi diskon retail
+│   │   └── TransaksiHelper.php      # Helper UAS untuk biaya admin, kupon, dan cashback
+│   │
+│   ├── Models/
+│   │   ├── ProductModel.php         # Representasi data tabel produk
+│   │   ├── TransactionModel.php     # Representasi data tabel transaksi
+│   │   ├── TransactionDetailModel.php # Representasi data tabel detail transaksi
+│   │   └── UserModel.php            # Representasi data tabel pengguna/users
+│   │
+│   ├── Services/
+│   │   └── RajaOngkirService.php    # Penghubung aplikasi ke API RajaOngkir (cURL)
+│   │
 │   └── Views/
-│       └── v_checkout.php           <-- Input kupon + tabel realtime breakdown harga (jQuery)
-└── README.md                        <-- Dokumentasi proyek
+│       ├── layout.php               # Template layout utama aplikasi (Navbar, Sidebar)
+│       ├── v_login.php              # Halaman login user/admin
+│       ├── v_home.php               # Catalog produk & tombol beli
+│       ├── v_keranjang.php          # Review item keranjang belanja
+│       ├── v_checkout.php           # Form isi alamat + ongkir + kupon & total belanja
+│       ├── v_history.php            # Tampilan riwayat pembelian user
+│       └── produk/
+│           ├── index.php            # Panel admin list produk (CRUD)
+│           └── download_pdf.php     # Tampilan cetak PDF laporan produk
+│
+├── public/                          # Folder publik (Aset CSS, JS, Image, dan index.php)
+├── writable/                        # Folder log, session data, dan cache sistem CI4
+└── README.md                        # Panduan dokumentasi proyek
 ```
 
 ---
 
-## ⚙️ Cara Menjalankan & Migrasi Database
-Jika Anda menggunakan XAMPP, jalankan MySQL & Apache terlebih dahulu.
+## 🛠️ Panduan Instalasi & Konfigurasi
 
-### 1. Migrasi Database
-Gunakan PHP CLI versi 8.2 atau di atasnya untuk menjalankan migrasi:
+### 1. Prasyarat Sistem
+- Web Server (Apache & MySQL) seperti **XAMPP**.
+- PHP Versi 8.2 atau di atasnya.
+- Composer terinstall di perangkat Anda.
+
+### 2. Kloning & Pemasangan Dependensi
+Buka terminal di folder web server Anda (misal `htdocs/`) dan lakukan instalasi composer:
+```bash
+composer install
+```
+
+### 3. Konfigurasi Environment (`.env`)
+Salin file `env` menjadi `.env` di root project Anda:
+```bash
+cp env .env
+```
+Buka file `.env` tersebut dan sesuaikan konfigurasi database dan API Anda:
+```env
+# Mode Aplikasi
+CI_ENVIRONMENT = development
+
+# URL Aplikasi
+app.baseURL = 'http://localhost:8080/'
+
+# Konfigurasi Database
+database.default.hostname = localhost
+database.default.database = nama_database_anda
+database.default.username = root
+database.default.password = 
+
+# RajaOngkir API Key (Masukkan API Key Anda di sini)
+rajaongkir.key = 'isi_dengan_api_key_rajaongkir_anda'
+```
+
+### 4. Migrasi & Pengisian Data Awal (Seeding)
+Jalankan migrasi untuk membuat seluruh tabel dan seeder untuk data awal:
 ```bash
 php spark migrate
+php spark db:seed UserSeeder
+php spark db:seed ProductSeeder
 ```
 
-Jika CLI PHP menggunakan versi lama (di bawah 8.2), jalankan query SQL berikut di menu **SQL** phpMyAdmin database Anda:
-```sql
-ALTER TABLE `transaction`
-ADD COLUMN `biaya_admin` DOUBLE NULL AFTER `ongkir`,
-ADD COLUMN `kupon_code` VARCHAR(20) NULL AFTER `biaya_admin`,
-ADD COLUMN `diskon_kupon` DOUBLE NULL AFTER `kupon_code`,
-ADD COLUMN `cashback` DOUBLE NULL AFTER `diskon_kupon`;
-```
+*Catatan: Jika php CLI Anda di bawah versi 8.2, Anda bisa mengimpor struktur database secara manual lewat file SQL di phpMyAdmin.*
 
-### 2. Jalankan Aplikasi
+### 5. Menjalankan Server Lokal
+Jalankan perintah berikut untuk mengaktifkan server bawaan CodeIgniter:
 ```bash
 php spark serve
 ```
-Buka `http://localhost:8080` di browser Anda.
+Akses aplikasi melalui browser di alamat: `http://localhost:8080`
 
----
-
-## 🧪 Skenario Pengujian (Test Cases)
-Verifikasi perhitungan checkout dilakukan dengan skenario berikut:
-
-| # | Skenario Produk | Total Belanja | Kupon | Biaya Admin | Diskon Kupon | Cashback |
-|---|---|---|---|---|---|---|
-| **1** | 1x Lenovo | Rp 6.299.000 | - | Rp 31.495 (0.5%) | Rp 0 (0%) | Rp 0 (0%) |
-| **2** | 2x Vivo | Rp 13.798.000 | `HEMAT` | Rp 68.990 (0.5%) | Rp 2.069.700 (15%) | Rp 0 (0%) |
-| **3** | 3x ASUS TUF | Rp 32.697.000 | `SUPER` | Rp 245.228 (0.75%) | Rp 6.539.400 (20%) | Rp 653.940 (2%) |
-| **4** | 3x ASUS TUF | Rp 32.697.000 | `KODESALAH` | Rp 245.228 (0.75%) | Rp 0 (0%) | Rp 653.940 (2%) |
-| **5** | 5x ASUS TUF | Rp 54.495.000 | `SUPER` | Rp 408.713 (0.75%) | Rp 10.899.000 (20%) | Rp 1.089.900 (2%) |
+### 🔑 Akun Login Bawaan (Default Seeder)
+- **Username**: `admin`
+- **Password**: `admin123`

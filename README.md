@@ -1,69 +1,84 @@
-# CodeIgniter 4 Application Starter
+# UAS PWL: Checkout & Perhitungan Tambahan (Capstone Project)
 
-## What is CodeIgniter?
+Proyek ini adalah implementasi sistem checkout dengan perhitungan tambahan untuk **Ujian Akhir Semester (UAS) Genap 2025/2026** mata kuliah Pemrograman Web Lanjut (PWL).
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+- **Nama**: Na'ilah Azfa Zarqarida
+- **NIM**: A11.2024.15549
+- **Kelompok**: A11.4408
+- **Dosen Pengampu**: Danny Oka Ratmana, M.Kom
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+---
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+## 🛠️ Fitur Perhitungan Tambahan
+Aplikasi menghitung dan menyimpan komponen keuangan transaksi berikut ke database secara otomatis:
+1. **Biaya Admin**:
+   - Total Belanja $\le$ Rp 20.000.000 $\rightarrow$ Tarif **0.5%**
+   - Total Belanja $>$ Rp 20.000.000 $\rightarrow$ Tarif **0.75%**
+2. **Kupon Diskon**:
+   - `HEMAT` $\rightarrow$ Potongan **15%**
+   - `SUPER` $\rightarrow$ Potongan **20%**
+   - Kode Lainnya / Invalid $\rightarrow$ Potongan **0%**
+3. **Cashback**:
+   - Total Belanja $>$ Rp 10.000.000 $\rightarrow$ Cashback **2%**
+   - Total Belanja $\le$ Rp 10.000.000 $\rightarrow$ Cashback **0%**
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+---
 
-## Installation & updates
+## 📂 Struktur File Implementasi UAS
+Berikut adalah file utama yang dimodifikasi dan ditambahkan untuk mengimplementasikan fitur UAS:
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+```text
+belajar-azfa/
+├── app/
+│   ├── Controllers/
+│   │   └── TransaksiController.php  <-- Update buy() & checkout() logic
+│   ├── Helpers/
+│   │   └── TransaksiHelper.php      <-- Core logic hitung biaya admin, diskon, cashback
+│   ├── Models/
+│   │   └── TransactionModel.php     <-- Update $allowedFields untuk menyimpan data uas
+│   ├── Database/
+│   │   └── Migrations/
+│   │       └── 2026-07-03-063753_UpdateTransactionTableUas.php <-- Migration field baru
+│   └── Views/
+│       └── v_checkout.php           <-- Input kupon + tabel realtime breakdown harga (jQuery)
+└── README.md                        <-- Dokumentasi proyek
+```
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+---
 
-## Setup
+## ⚙️ Cara Menjalankan & Migrasi Database
+Jika Anda menggunakan XAMPP, jalankan MySQL & Apache terlebih dahulu.
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+### 1. Migrasi Database
+Gunakan PHP CLI versi 8.2 atau di atasnya untuk menjalankan migrasi:
+```bash
+php spark migrate
+```
 
-## Important Change with index.php
+Jika CLI PHP menggunakan versi lama (di bawah 8.2), jalankan query SQL berikut di menu **SQL** phpMyAdmin database Anda:
+```sql
+ALTER TABLE `transaction`
+ADD COLUMN `biaya_admin` DOUBLE NULL AFTER `ongkir`,
+ADD COLUMN `kupon_code` VARCHAR(20) NULL AFTER `biaya_admin`,
+ADD COLUMN `diskon_kupon` DOUBLE NULL AFTER `kupon_code`,
+ADD COLUMN `cashback` DOUBLE NULL AFTER `diskon_kupon`;
+```
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+### 2. Jalankan Aplikasi
+```bash
+php spark serve
+```
+Buka `http://localhost:8080` di browser Anda.
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+---
 
-**Please** read the user guide for a better explanation of how CI4 works!
+## 🧪 Skenario Pengujian (Test Cases)
+Verifikasi perhitungan checkout dilakukan dengan skenario berikut:
 
-## Repository Management
-
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
-
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
-
-## Server Requirements
-
-PHP version 8.2 or higher is required, with the following extensions installed:
-
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
-
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
-
-Additionally, make sure that the following extensions are enabled in your PHP:
-
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+| # | Skenario Produk | Total Belanja | Kupon | Biaya Admin | Diskon Kupon | Cashback |
+|---|---|---|---|---|---|---|
+| **1** | 1x Lenovo | Rp 6.299.000 | - | Rp 31.495 (0.5%) | Rp 0 (0%) | Rp 0 (0%) |
+| **2** | 2x Vivo | Rp 13.798.000 | `HEMAT` | Rp 68.990 (0.5%) | Rp 2.069.700 (15%) | Rp 0 (0%) |
+| **3** | 3x ASUS TUF | Rp 32.697.000 | `SUPER` | Rp 245.228 (0.75%) | Rp 6.539.400 (20%) | Rp 653.940 (2%) |
+| **4** | 3x ASUS TUF | Rp 32.697.000 | `KODESALAH` | Rp 245.228 (0.75%) | Rp 0 (0%) | Rp 653.940 (2%) |
+| **5** | 5x ASUS TUF | Rp 54.495.000 | `SUPER` | Rp 408.713 (0.75%) | Rp 10.899.000 (20%) | Rp 1.089.900 (2%) |

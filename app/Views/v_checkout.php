@@ -50,6 +50,15 @@
             </div>
             
             <div class="col-12">
+                <?= form_label('Kode Kupon', 'kupon_code', ['class' => 'form-label']) ?>
+                <?= form_input([
+                    'name'        => 'kupon_code',
+                    'id'          => 'kupon_code',
+                    'class'       => 'form-control',
+                    'placeholder' => 'Masukkan kode kupon (contoh: HEMAT, SUPER)']) ?>
+            </div>
+
+            <div class="col-12">
                 <?= form_submit(
                     'submit',
                     'Buat Pesanan',
@@ -89,15 +98,30 @@
                     <td>Subtotal</td>
                     <td><?= number_to_currency($total, 'IDR') ?></td>
                 </tr>
-                <tr id="row-diskon" class="text-danger" style="display: none; font-weight: bold;">
+                <tr id="row-diskon-kupon" class="text-success" style="display: none; font-weight: bold;">
                     <td colspan="2"></td>
-                    <td>Diskon (<span id="diskon-persen">0</span>%)</td>
+                    <td>Diskon Kupon (<span id="diskon-persen">0</span>%)</td>
                     <td>-<span id="diskon-nominal">IDR 0,00</span></td>
+                </tr>
+                <tr id="row-biaya-admin" style="display: none; font-weight: bold;">
+                    <td colspan="2"></td>
+                    <td>Biaya Admin</td>
+                    <td>+<span id="biaya-admin-nominal">IDR 0,00</span></td>
+                </tr>
+                <tr id="row-cashback" class="text-info" style="display: none; font-weight: bold;">
+                    <td colspan="2"></td>
+                    <td>Cashback</td>
+                    <td><span id="cashback-nominal">IDR 0,00</span></td>
                 </tr>
                 <tr>
                     <td colspan="2"></td>
-                    <td>Total</td>
-                    <td><span id="total"><?= number_to_currency($total, 'IDR') ?></span></td>
+                    <td>Ongkir</td>
+                    <td>+<span id="ongkir-label">IDR 0,00</span></td>
+                </tr>
+                <tr class="table-active fw-bold">
+                    <td colspan="2"></td>
+                    <td>Grand Total</td>
+                    <td><span id="grand-total"><?= number_to_currency($total, 'IDR') ?></span></td>
                 </tr>
             </tbody>
         </table>
@@ -112,38 +136,63 @@ $(document).ready(function() {
     let subtotal = <?= $total ?>;
     hitungTotal();
 
-    function hitungTotal() {
-        let subtotalNum = parseInt(subtotal) || 0;
-        let ongkirNum = parseInt(ongkir) || 0;
-        
-        // --- LOGIKA DISKON TIERED (Task 4) ---
-        let persenDiskon = 0;
-        if (subtotalNum >= 50000000) {
-            persenDiskon = 15;
-        } else if (subtotalNum >= 30000000) {
-            persenDiskon = 10;
-        } else if (subtotalNum >= 10000000) {
-            persenDiskon = 5;
-        }
+    function formatRupiah(val) {
+        return `IDR ${val.toLocaleString('id-ID')},00`;
+    }
 
-        let nominalDiskon = (persenDiskon / 100) * subtotalNum;
-        
-        // Tampilkan/Sembunyikan baris rincian diskon berdasarkan kriteria kuis
+    function hitungTotal() {
+        let s = parseInt(subtotal) || 0;
+        let o = parseInt(ongkir) || 0;
+
+        // --- Biaya Admin (0.5% jika <= 20jt, 0.75% jika > 20jt) ---
+        let biayaAdmin = s <= 20000000 ? s * 0.005 : s * 0.0075;
+        biayaAdmin = Math.round(biayaAdmin);
+
+        // --- Kupon Promo ---
+        let kuponCode = ($("#kupon_code").val() || "").toUpperCase().trim();
+        let persenDiskon = 0;
+        if (kuponCode === 'HEMAT') persenDiskon = 15;
+        else if (kuponCode === 'SUPER') persenDiskon = 20;
+        let diskonKupon = Math.round((persenDiskon / 100) * s);
+
+        // --- Cashback (2% jika > 10jt) ---
+        let cashback = s > 10000000 ? Math.round(s * 0.02) : 0;
+
+        // --- Tampilkan Biaya Admin ---
+        $("#biaya-admin-nominal").text(formatRupiah(biayaAdmin));
+        if (biayaAdmin > 0) $("#row-biaya-admin").show(); else $("#row-biaya-admin").hide();
+
+        // --- Tampilkan Diskon Kupon ---
         if (persenDiskon > 0) {
             $("#diskon-persen").text(persenDiskon);
-            $("#diskon-nominal").text(`IDR ${nominalDiskon.toLocaleString('id-ID')},00`);
-            $("#row-diskon").show();
+            $("#diskon-nominal").text(formatRupiah(diskonKupon));
+            $("#row-diskon-kupon").show();
         } else {
-            $("#row-diskon").hide();
+            $("#row-diskon-kupon").hide();
         }
 
-        // Rumus Grand Total: Subtotal - Diskon + Ongkir
-        let total = subtotalNum - nominalDiskon + ongkirNum;
+        // --- Tampilkan Cashback ---
+        if (cashback > 0) {
+            $("#cashback-nominal").text(formatRupiah(cashback));
+            $("#row-cashback").show();
+        } else {
+            $("#row-cashback").hide();
+        }
 
-        $("#ongkir").val(ongkirNum);
-        $("#total").text(`IDR ${total.toLocaleString('id-ID')},00`);
-        $("#total_harga").val(total);
+        // --- Ongkir ---
+        $("#ongkir").val(o);
+        $("#ongkir-label").text(formatRupiah(o));
+
+        // --- Grand Total = Subtotal - Diskon + Biaya Admin + Ongkir ---
+        let grandTotal = s - diskonKupon + biayaAdmin + o;
+        $("#grand-total").text(formatRupiah(grandTotal));
+        $("#total_harga").val(grandTotal);
     }
+
+    // Event: ketika kupon diketik
+    $("#kupon_code").on('input', function() {
+        hitungTotal();
+    });
 
     // 1. Inisialisasi Select2 Kelurahan 
     $('#kelurahan').select2({

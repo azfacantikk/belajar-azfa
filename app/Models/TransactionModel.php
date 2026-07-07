@@ -14,7 +14,7 @@ class TransactionModel extends Model
     protected $protectFields    = true;
     
     // PENYEMPURNAAN: Menambahkan 'created_at' dan 'updated_at' agar sistem diizinkan mengisi waktu otomatis
-    protected $allowedFields    = ['username', 'total_harga', 'alamat', 'ongkir', 'status', 'created_at', 'updated_at'];
+    protected $allowedFields    = ['username', 'total_harga', 'alamat', 'ongkir', 'status', 'biaya_admin', 'kupon_code', 'diskon_kupon', 'cashback', 'created_at', 'updated_at'];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;

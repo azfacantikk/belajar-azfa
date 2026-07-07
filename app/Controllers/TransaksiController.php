@@ -17,7 +17,7 @@ class TransaksiController extends BaseController
 
     public function __construct()
     {
-        helper(['number', 'form']);
+        helper(['number', 'form', 'TransaksiHelper']);
         $this->cart = service('cart');
         $this->transactionModel = new TransactionModel();
         $this->transactionDetailModel = new TransactionDetailModel(); 
@@ -177,19 +177,30 @@ class TransaksiController extends BaseController
     $db = \Config\Database::connect();
     $db->transStart(); 
 
-    $subtotal = 0;
+    $total_harga = 0;
     foreach ($cartItems as $item) {
-        $subtotal += $item['qty'] * $item['price'];
+        $total_harga += $item['qty'] * $item['price'];
     }
 
     $ongkir = (int) $this->request->getPost('ongkir');
+    $kupon_code = $this->request->getPost('kupon_code');
+
+    // Hitung komponen UAS
+    $biaya_admin   = hitung_biaya_admin($total_harga);
+    $diskon_kupon  = hitung_diskon_kupon($total_harga, $kupon_code);
+    $cashback      = hitung_cashback($total_harga);
+    $grand_total   = $total_harga - $diskon_kupon + $biaya_admin + $ongkir;
 
     $transaction = [
-        'username'    => $this->request->getPost('username'),
-        'alamat'      => $this->request->getPost('alamat'),
-        'ongkir'      => $ongkir,
-        'total_harga' => $subtotal + $ongkir,
-        'status'      => 0, 
+        'username'     => $this->request->getPost('username'),
+        'alamat'       => $this->request->getPost('alamat'),
+        'ongkir'       => $ongkir,
+        'total_harga'  => $total_harga,
+        'biaya_admin'  => $biaya_admin,
+        'kupon_code'   => $kupon_code ?: null,
+        'diskon_kupon' => $diskon_kupon,
+        'cashback'     => $cashback,
+        'status'       => 0, 
     ];
 
     // insert transaction
